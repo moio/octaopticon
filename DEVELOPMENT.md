@@ -16,7 +16,7 @@ pip freeze > requirements.txt
 
 From an activated virtual environment:
 ```sh
-python -m pytest
+python -m pytest -v -s
 ```
 
 ## Run linter
