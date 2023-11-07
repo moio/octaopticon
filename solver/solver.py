@@ -187,8 +187,15 @@ def solve(problem: Problem) -> Solution:
             for j in range(S):
                 α_corrected_mij = []
                 for k in range(W):
-                    α_corrected_mijk = model.NewIntVarFromDomain(α_domain, f"α_corrected[{m}][{i}][{j}][{k}]")
-                    model.AddElement(j_corrected[j][m][i], α_ikj[i][k], α_corrected_mijk)
+                    α_corrected_element_mijk = model.NewIntVarFromDomain(α_domain, f"α_corrected_element[{m}][{i}][{j}][{k}]")
+                    model.AddElement(j_corrected[j][m][i], α_ikj[i][k], α_corrected_element_mijk)
+
+                    α_corrected_unreduced_mijk = model.NewIntVar(0, 180 + 360, f"α_corrected[{m}][{i}][{j}][{k}]")
+                    model.Add(α_corrected_unreduced_mijk == α_corrected_element_mijk + math.floor(360.0 / S) * n[m][i])
+
+                    α_corrected_mijk = model.NewIntVar(0, 180, f"α_corrected[{m}][{i}][{j}][{k}]")
+                    model.AddModuloEquality(α_corrected_mijk, α_corrected_unreduced_mijk, 180)
+
                     α_corrected_mij.append(α_corrected_mijk)
                 α_corrected_mi.append(α_corrected_mij)
             α_corrected_m.append(α_corrected_mi)
@@ -206,11 +213,11 @@ def solve(problem: Problem) -> Solution:
             for m in range(M):
                 D_jkm = [None]
                 for i in range(1, P):
-                    aD_jkmi = model.NewIntVar(-360 * 10, 360 * 10, f"aD_jkmi[{j}][{k}][{m}][{i}]")
-                    model.Add(aD_jkmi == α_corrected[m][i][j][k] + math.floor(360.0 / S) * (n[m][i]) - (α_corrected[m][i - 1][j][k] + math.floor(360.0 / S) * (n[m][i - 1])))
+                    D_unreduced_jkmi = model.NewIntVar(-180, 180, f"D_unreduced_jkmi[{j}][{k}][{m}][{i}]")
+                    model.Add(D_unreduced_jkmi == α_corrected[m][i][j][k] - α_corrected[m][i - 1][j][k])
 
                     D_jkmi = model.NewIntVar(0, 180, f"D[{j}][{k}][{m}][{i}]")
-                    model.AddModuloEquality(D_jkmi, aD_jkmi + 360 * 10, 180)
+                    model.AddModuloEquality(D_jkmi, D_unreduced_jkmi + 360 * 10, 180)
                     D_jkm.append(D_jkmi)
                 D_jk.append(D_jkm)
             D_j.append(D_jk)

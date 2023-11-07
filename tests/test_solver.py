@@ -1,3 +1,4 @@
+import math
 import random
 import pytest
 from solver.solver import Problem, compute_valid_angles, compute_energy, compute_transitions, solve
@@ -181,7 +182,7 @@ def test_solve(problem):
         for i in range(P):
             for j in range(S):
                 for k in range(W):
-                    assert α_corrected[m][i][j][k] == α[i][j_corrected[j][m][i]][k]
+                    assert α_corrected[m][i][j][k] == (α[i][j_corrected[j][m][i]][k] + math.floor(360.0 / S) * n[m][i]) % 180
 
     # consistency of actual results
     for m in range(len(p)):
