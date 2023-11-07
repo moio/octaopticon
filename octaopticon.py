@@ -7,25 +7,22 @@ from solver.solver import Problem, solve
 
 problem = Problem(
     4,  # pizzas
-    4,  # slices (per pizza)
-    1,  # windows (per slice)
-    4,  # possible filter angles
+    8,  # slices (per pizza)
+    2,  # windows (per slice)
+    8,  # possible filter angles
     [
         # image 0
         [
-            [100], [0],
-            [0], [0],
+            [100, 0], [100, 100], [0, 0], [0, 0], [100, 100], [0, 0], [0, 0], [100, 100],
         ],
         # image 1
         [
-            [100], [100],
-            [100], [100],
+            [100, 0], [100, 0], [100, 0], [100, 0], [100, 0], [100, 100], [100, 0], [100, 0],
         ],
         # image 2
         [
-            [0], [0],
-            [0], [0],
-        ]
+            [0, 0], [0, 0], [100, 100], [100, 100], [0, 0], [0, 0], [100, 100], [100, 100],
+        ],
     ],
 )
 
