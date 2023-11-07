@@ -109,6 +109,11 @@ def test_compute_transitions(A, P, expected):
     assert expected == actual
 
 
+@pytest.fixture(scope='module')
+def global_data():
+    return {'total_resolved': 0, 'total_unsolved': 0}
+
+
 @pytest.mark.parametrize(
     "problem",
     [
@@ -155,12 +160,14 @@ def test_compute_transitions(A, P, expected):
         ),
     ]
 )
-def test_solve(problem):
+def test_solve(global_data, problem):
     solution = solve(problem)
 
     if not solution:
+        global_data['total_unsolved'] += 1
         print(f" *********************** UNSOLVED {problem}")
         return
+    global_data['total_resolved'] += 1
     print(f"*********************** RESOLVED {problem}")
 
     p = problem.p
@@ -199,7 +206,7 @@ def test_solve(problem):
                 assert abs(p[m][j][k] - energy) < 2
 
 
-def test_solve_randomized():
+def test_solve_randomized(global_data):
     random.seed(0)
     for W in range(1, 6):
         for P in range(2, 4):
@@ -220,4 +227,9 @@ def test_solve_randomized():
                             p,
                         )
 
-                        test_solve(problem)
+                        test_solve(global_data, problem)
+
+
+def test_report_results(global_data):
+    print(f"\n\n******************* TOTAL UNSOLVED {global_data['total_unsolved']}\n")
+    print(f"******************* TOTAL RESOLVED {global_data['total_resolved']}\n")
