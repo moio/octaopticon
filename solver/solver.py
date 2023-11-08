@@ -231,19 +231,13 @@ def solve(problem: Problem) -> Solution:
         for j in range(S):
             for k in range(W):
                 start_state = 100
-                end_states = []
-                if p[m][j][k] == 0:
-                    end_states = [p[m][j][k]]
-                else:
-                    for transition in transitions:
-                        if transition[2] >= p[m][j][k]:
-                            end_states.append(transition[2])
-                model.AddAutomaton(D[j][k][m][1:], start_state, sorted(end_states), transitions)
+                end_state = p[m][j][k]
+                model.AddAutomaton(D[j][k][m][1:], start_state, [end_state], transitions)
 
     # Solve
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
-    solver.parameters.max_time_in_seconds = 360
+    solver.parameters.max_time_in_seconds = 60
 
     status = solver.Solve(model)
 
