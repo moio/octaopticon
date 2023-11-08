@@ -13,6 +13,10 @@ problem = Problem(
     [
         # image 0
         [
+            [100, 100], [100, 100], [100, 100], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0],
+        ],
+        # image 0
+        [
             [100, 0], [100, 100], [0, 0], [0, 0], [100, 100], [0, 0], [0, 0], [100, 100],
         ],
         # image 1
@@ -39,7 +43,7 @@ if __name__ == "__main__":
                 print("    corrected angles:")
                 for j in range(problem.S):
                     for k in range(problem.W):
-                        print(f"            {solution.α[i][j][k]} -> {solution.α_corrected[m][i][j][k]}")
+                        print(f"            {solution.α[i][j][k]} -> {solution.α_corrected[j][k][m][i]}")
 
         print("\n\n**SOLUTION**\n")
         for i in reversed(range(problem.P)):
@@ -48,6 +52,7 @@ if __name__ == "__main__":
                 print(f"    slice {j}: {solution.α[i][j]}")
         for m in range(len(problem.p)):
             print(f"offsets to reconstruct image {m}: {solution.n[m]}")
+            print(f"positions of pizzas to reconstruct image {m}: {solution.d[m]}")
 
     else:
         print("no result")

@@ -77,12 +77,14 @@ class Problem:
 class Solution:
     """Represents outputs of an Opticon problem."""
 
-    def __init__(self, success: bool, wall_time: float, α: list[list[list[int]]], n: list[list[int]], j_corrected: list[list[list[int]]], α_corrected: list[list[list[list[int]]]]):
+    def __init__(self, success: bool, wall_time: float, α: list[list[list[int]]], n: list[list[int]], d: list[list[int]], j_corrected: list[list[list[int]]], α_corrected: list[list[list[list[int]]]]):
         """
             α the list of angles for each filter on each window
                 - α[i][j][k] is the angle of the filter at window k on slice j on pizza i
             n is the list of offsets, measured in slices, of each pizza in the stack to obtain a certain image
                 - n[m][i] is the slice offset of pizza i to get the image m (measured clock-wise)
+            d is the list of substitutions of each pizza in the stack to obtain a certain image
+                - d[m][s] is the pizza index at stack position s to get the image m (where bottom is 0)
 
             Other parameters are internal and added for testing/debugging purposes only
         """
@@ -90,6 +92,7 @@ class Solution:
         self.wall_time = wall_time
         self.α = α
         self.n = n
+        self.d = d
         self.j_corrected = j_corrected
         self.α_corrected = α_corrected
 
@@ -141,7 +144,7 @@ def solve(problem: Problem) -> Solution:
             α_i.append(α_ij)
         α.append(α_i)
 
-    # n[m][i] is the slice offset of pizza i to get the image m
+    # n[m][i] is the slice offset (rotation) of pizza i to obtain the image m
     M = len(p)
     n = []
     for m in range(M):
@@ -150,6 +153,16 @@ def solve(problem: Problem) -> Solution:
             n_mi = model.NewIntVar(0, S - 1, f"n[{m}][{i}]")
             n_m.append(n_mi)
         n.append(n_m)
+
+    # d[m][s] is the index i of the pizza at stack position s to obtain the image m
+    d = []
+    for m in range(M):
+        d_m = []
+        for s in range(P):
+            d_ms = model.NewIntVar(0, P - 1, f"d[{m}][{s}]")
+            d_m.append(d_ms)
+        model.AddAllDifferent(d_m)
+        d.append(d_m)
 
     # Intermediate Variables
 
@@ -179,31 +192,31 @@ def solve(problem: Problem) -> Solution:
             α_i.append(α_ik)
         α_ikj.append(α_i)
 
-    # α_corrected[m][i][j][k] is the angle of the filter at window k of pizza i and slice j
+    # α_corrected[j][k][m][i] is the angle of the filter at window k, slice j of pizza i
     # corrected by its n[m][i] (how many slices pizza i is rotated)
     α_corrected = []
-    for m in range(M):
-        α_corrected_m = []
-        for i in range(P):
-            α_corrected_mi = []
-            for j in range(S):
-                α_corrected_mij = []
-                for k in range(W):
-                    α_corrected_element_mijk = model.NewIntVarFromDomain(α_domain, f"α_corrected_element[{m}][{i}][{j}][{k}]")
-                    model.AddElement(j_corrected[j][m][i], α_ikj[i][k], α_corrected_element_mijk)
+    for j in range(S):
+        α_corrected_j = []
+        for k in range(W):
+            α_corrected_jk = []
+            for m in range(M):
+                α_corrected_jkm = []
+                for i in range(P):
+                    α_corrected_element_jkmi = model.NewIntVarFromDomain(α_domain, f"α_corrected_element[{j}][{k}][{m}][{i}]")
+                    model.AddElement(j_corrected[j][m][i], α_ikj[i][k], α_corrected_element_jkmi)
 
-                    α_corrected_unreduced_mijk = model.NewIntVar(0, 180 + 360, f"α_corrected[{m}][{i}][{j}][{k}]")
-                    model.Add(α_corrected_unreduced_mijk == α_corrected_element_mijk + math.floor(360.0 / S) * n[m][i])
+                    α_corrected_unreduced_jkmi = model.NewIntVar(0, 180 + 360, f"α_corrected[{j}][{k}][{m}][{i}]")
+                    model.Add(α_corrected_unreduced_jkmi == α_corrected_element_jkmi + math.floor(360.0 / S) * n[m][i])
 
-                    α_corrected_mijk = model.NewIntVar(0, 180, f"α_corrected[{m}][{i}][{j}][{k}]")
-                    model.AddModuloEquality(α_corrected_mijk, α_corrected_unreduced_mijk, 180)
+                    α_corrected_jkmi = model.NewIntVar(0, 180, f"α_corrected[{j}][{k}][{m}][{i}]")
+                    model.AddModuloEquality(α_corrected_jkmi, α_corrected_unreduced_jkmi, 180)
 
-                    α_corrected_mij.append(α_corrected_mijk)
-                α_corrected_mi.append(α_corrected_mij)
-            α_corrected_m.append(α_corrected_mi)
-        α_corrected.append(α_corrected_m)
+                    α_corrected_jkm.append(α_corrected_jkmi)
+                α_corrected_jk.append(α_corrected_jkm)
+            α_corrected_j.append(α_corrected_jk)
+        α_corrected.append(α_corrected_j)
 
-    # D[j][k][m][i] is the angle delta between filter in window k on slice j of pizza i
+    # D[j][k][m][s] is the angle delta between filter in window k on slice j of pizza at stack index s
     # and the filter in the same location one pizza below
     # note that it's not defined for pizza 0 (there's nothing below)
     # note it depends on respective pizzas n[m][i]s (how many slices pizzas are rotated)
@@ -214,13 +227,19 @@ def solve(problem: Problem) -> Solution:
             D_jk = []
             for m in range(M):
                 D_jkm = [None]
-                for i in range(1, P):
-                    D_unreduced_jkmi = model.NewIntVar(-180, 180, f"D_unreduced_jkmi[{j}][{k}][{m}][{i}]")
-                    model.Add(D_unreduced_jkmi == α_corrected[m][i][j][k] - α_corrected[m][i - 1][j][k])
+                for s in range(1, P):
+                    α_corrected_jkms = model.NewIntVar(0, 180, f"α_corrected_jkms[{j}][{k}][{m}][{s}]")
+                    model.AddElement(d[m][s], α_corrected[j][k][m], α_corrected_jkms)
 
-                    D_jkmi = model.NewIntVar(0, 180, f"D[{j}][{k}][{m}][{i}]")
-                    model.AddModuloEquality(D_jkmi, D_unreduced_jkmi + 360 * 10, 180)
-                    D_jkm.append(D_jkmi)
+                    α_corrected_jkms_ = model.NewIntVar(0, 180, f"α_corrected_jkms_[{j}][{k}][{m}][{s-1}]")
+                    model.AddElement(d[m][s - 1], α_corrected[j][k][m], α_corrected_jkms_)
+
+                    D_unreduced_jkms = model.NewIntVar(-180, 180, f"D_unreduced_jkms[{j}][{k}][{m}][{s}]")
+                    model.Add(D_unreduced_jkms == α_corrected_jkms - α_corrected_jkms_)
+
+                    D_jkms = model.NewIntVar(0, 180, f"D[{j}][{k}][{m}][{s}]")
+                    model.AddModuloEquality(D_jkms, D_unreduced_jkms + 360 * 10, 180)
+                    D_jkm.append(D_jkms)
                 D_jk.append(D_jkm)
             D_j.append(D_jk)
         D.append(D_j)
@@ -256,6 +275,7 @@ def solve(problem: Problem) -> Solution:
         solver.WallTime(),
         [[[solver.Value(α[i][j][k]) for k in range(W)] for j in range(S)] for i in range(P)] if success else [],
         [[solver.Value(n[m][i]) for i in range(P)] for m in range(M)] if success else [],
+        [[solver.Value(d[m][s]) for s in range(P)] for m in range(M)] if success else [],
         [[[solver.Value(j_corrected[j][m][i]) for i in range(P)] for m in range(M)] for j in range(S)] if success else [],
-        [[[[solver.Value(α_corrected[m][i][j][k]) for k in range(W)] for j in range(S)] for i in range(P)] for m in range(M)] if success else [],
+        [[[[solver.Value(α_corrected[j][k][m][i]) for i in range(P)] for m in range(M)] for k in range(W)] for j in range(S)] if success else [],
     )

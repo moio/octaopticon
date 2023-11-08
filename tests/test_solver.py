@@ -179,6 +179,7 @@ def test_solve(global_data, problem):
     W = problem.W
     P = problem.P
     n = solution.n
+    d = solution.d
     α = solution.α
 
     # internal consistency checks
@@ -193,16 +194,18 @@ def test_solve(global_data, problem):
         for i in range(P):
             for j in range(S):
                 for k in range(W):
-                    assert α_corrected[m][i][j][k] == (α[i][j_corrected[j][m][i]][k] + math.floor(360.0 / S) * n[m][i]) % 180
+                    assert α_corrected[j][k][m][i] == (α[i][j_corrected[j][m][i]][k] + math.floor(360.0 / S) * n[m][i]) % 180
 
     # consistency of actual results
     for m in range(len(p)):
         for j in range(S):
             for k in range(W):
                 energy = 100
-                for i in range(1, P):
-                    n_under = n[m][i - 1]
-                    α_under = α[i - 1][(j - n_under) % S][k]
+                for s in range(1, P):
+                    i = d[m][s]
+                    i_ = d[m][s - 1]
+                    n_under = n[m][i_]
+                    α_under = α[i_][(j - n_under) % S][k]
                     n_over = n[m][i]
                     α_over = α[i][(j - n_over) % S][k]
                     energy = round(compute_energy(energy, α_over + 360.0 / S * (n_over) - (α_under + 360.0 / S * n_under)))
