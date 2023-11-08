@@ -77,7 +77,7 @@ class Problem:
 class Solution:
     """Represents outputs of an Opticon problem."""
 
-    def __init__(self, α: list[list[list[int]]], n: list[list[int]], j_corrected: list[list[list[int]]], α_corrected: list[list[list[list[int]]]]):
+    def __init__(self, success: bool, wall_time: float, α: list[list[list[int]]], n: list[list[int]], j_corrected: list[list[list[int]]], α_corrected: list[list[list[list[int]]]]):
         """
             α the list of angles for each filter on each window
                 - α[i][j][k] is the angle of the filter at window k on slice j on pizza i
@@ -86,6 +86,8 @@ class Solution:
 
             Other parameters are internal and added for testing/debugging purposes only
         """
+        self.success = success
+        self.wall_time = wall_time
         self.α = α
         self.n = n
         self.j_corrected = j_corrected
@@ -239,12 +241,21 @@ def solve(problem: Problem) -> Solution:
 
     status = solver.Solve(model)
 
+    success = None
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        return Solution(
-            [[[solver.Value(α[i][j][k]) for k in range(W)] for j in range(S)] for i in range(P)],
-            [[solver.Value(n[m][i]) for i in range(P)] for m in range(M)],
-            [[[solver.Value(j_corrected[j][m][i]) for i in range(P)] for m in range(M)] for j in range(S)],
-            [[[[solver.Value(α_corrected[m][i][j][k]) for k in range(W)] for j in range(S)] for i in range(P)] for m in range(M)],
-        )
-    else:
-        return None
+        success = True
+    elif status == cp_model.INFEASIBLE:
+        success = False
+    elif status == cp_model.UNKNOWN:
+        success = None
+    elif status == cp_model.MODEL_INVALID:
+        raise cp_model.MODEL_INVALID
+
+    return Solution(
+        success,
+        solver.WallTime(),
+        [[[solver.Value(α[i][j][k]) for k in range(W)] for j in range(S)] for i in range(P)] if success else [],
+        [[solver.Value(n[m][i]) for i in range(P)] for m in range(M)] if success else [],
+        [[[solver.Value(j_corrected[j][m][i]) for i in range(P)] for m in range(M)] for j in range(S)] if success else [],
+        [[[[solver.Value(α_corrected[m][i][j][k]) for k in range(W)] for j in range(S)] for i in range(P)] for m in range(M)] if success else [],
+    )

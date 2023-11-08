@@ -111,7 +111,7 @@ def test_compute_transitions(A, P, expected):
 
 @pytest.fixture(scope='module')
 def global_data():
-    return {'total_resolved': 0, 'total_unsolved': 0}
+    return {'wall_time_success': [], 'wall_time_failure': [], 'wall_time_unknown': []}
 
 
 @pytest.mark.parametrize(
@@ -163,11 +163,15 @@ def global_data():
 def test_solve(global_data, problem):
     solution = solve(problem)
 
-    if not solution:
-        global_data['total_unsolved'] += 1
-        print(f" *********************** UNSOLVED {problem}")
+    if solution.success is False:
+        global_data['wall_time_failure'].append(solution.wall_time)
+        print(f" *********************** FAILURE {problem}")
         return
-    global_data['total_resolved'] += 1
+    if solution.success is None:
+        global_data['wall_time_unknown'].append(solution.wall_time)
+        print(f" *********************** UNKNOWN {problem}")
+        return
+    global_data['wall_time_success'].append(solution.wall_time)
     print(f"*********************** RESOLVED {problem}")
 
     p = problem.p
@@ -231,5 +235,33 @@ def test_solve_randomized(global_data):
 
 
 def test_report_results(global_data):
-    print(f"\n\n******************* TOTAL UNSOLVED {global_data['total_unsolved']}\n")
-    print(f"******************* TOTAL RESOLVED {global_data['total_resolved']}\n")
+    wts = global_data['wall_time_success']
+    wtf = global_data['wall_time_failure']
+    wtu = global_data['wall_time_unknown']
+    print("\n\n")
+    print(f"******************* TOTAL SUCCEEDED {len(wts)}\n")
+    print("hist")
+    print(auto_bin_histogram(wts))
+    print(f"******************* TOTAL FAILED {len(wtf)}\n")
+    print("hist")
+    print(auto_bin_histogram(wtf))
+    print(f"******************* TOTAL UNKNOWN {len(wtu)}\n")
+    print("hist")
+    print(auto_bin_histogram(wtu))
+
+
+def auto_bin_histogram(data, num_bins=10):
+    if not data:
+        return {}
+    min_val = min(data)
+    max_val = max(data)
+    bin_width = (max_val - min_val) / num_bins
+    bins = [min_val + i * bin_width for i in range(num_bins)]
+    bins.append(max_val)  # Include the upper bound in the last bin
+    histogram = {bin: 0 for bin in bins}
+    for value in data:
+        bin_index = int((value - min_val) / bin_width)
+        if bin_index == num_bins:
+            bin_index -= 1  # Handle the case where the value is equal to the max_val
+        histogram[bins[bin_index]] += 1
+    return histogram
