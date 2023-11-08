@@ -237,7 +237,7 @@ def solve(problem: Problem) -> Solution:
     # Solve
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
-    solver.parameters.max_time_in_seconds = 120
+    solver.parameters.max_time_in_seconds = 60
 
     status = solver.Solve(model)
 
