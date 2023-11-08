@@ -28,7 +28,7 @@ problem = Problem(
 
 if __name__ == "__main__":
     solution = solve(problem)
-    if solution:
+    if solution.success:
         print("\n\n**DEBUG INFORMATION**\n")
         for m in range(len(problem.p)):
             print(f"offsets to reconstruct image {m}: {solution.n[m]}")
