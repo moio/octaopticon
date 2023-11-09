@@ -27,6 +27,20 @@ def generate_octagon_star_points(max_size_mm, x_offset, y_offset):
     return " ".join(polygon_points)
 
 
+def generate_square_points(max_size_mm, x_offset, y_offset, angle_offset):
+    radius = max_size_mm / 2
+
+    polygon_points = []
+
+    for i in range(4):
+        angle_outer = 2 * math.pi * i / 4 + angle_offset
+        x_outer = x_offset + radius * math.cos(angle_outer)
+        y_outer = y_offset + radius * math.sin(angle_outer)
+        polygon_points.append(f"{x_outer},{y_outer}")
+
+    return " ".join(polygon_points)
+
+
 def generate_circle_centers(n, max_size_mm, x_offset, y_offset):
     radius_outer_mm = max_size_mm / 2
 
@@ -48,7 +62,8 @@ def generate_elements(max_size_mm, circle_radius_mm, radii, x_offset, y_offset):
 
     for radius in radii:
         for coords in generate_circle_centers(radius[0], max_size_mm * radius[1], x_offset, y_offset):
-            result.append(f'<polygon points="{generate_octagon_star_points(circle_radius_mm*2*1.5, coords[0], coords[1])}" fill="none" stroke="black" stroke-width="0.2" />')
+            result.append(f'<polygon points="{generate_square_points(circle_radius_mm * 2 * 1.5 * math.sqrt(2), coords[0], coords[1], 0)}" fill="none" stroke="black" stroke-width="0.2" />')
+            result.append(f'<polygon points="{generate_square_points(circle_radius_mm * 2 * 1.5 * math.sqrt(2), coords[0], coords[1], math.pi / 4)}" fill="none" stroke="black" stroke-width="0.2" />')
             result.append(f'<circle cx="{coords[0]}" cy="{coords[1]}" r="{circle_radius_mm}" fill="none" stroke="black" stroke-width="1.5" />')
 
     return result
