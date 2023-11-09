@@ -80,10 +80,10 @@ def generate_svg(document_size_x_mm, document_size_y_mm, elements):
 if __name__ == "__main__":
     # small
     elements = []
-    elements.extend(generate_elements(100, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4, 297 / 4))
-    elements.extend(generate_elements(100, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4 * 3, 297 / 4))
-    elements.extend(generate_elements(100, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4, 297 / 4 * 3))
-    elements.extend(generate_elements(100, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4 * 3, 297 / 4 * 3))
+    elements.extend(generate_elements(95, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4, 297 / 4))
+    elements.extend(generate_elements(95, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4 * 3, 297 / 4))
+    elements.extend(generate_elements(95, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4, 297 / 4 * 3))
+    elements.extend(generate_elements(95, 5, [[1, 0], [8, 13 / 32], [8, 23 / 32]], 210 / 4 * 3, 297 / 4 * 3))
     svg_content = generate_svg(210, 297, elements)
     with open("small.svg", 'w') as svg_file:
         svg_file.write(svg_content)
