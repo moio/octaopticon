@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# flake8: noqa: E241,E201,E261
 """Calculates OctaOpticon construction parameters."""
 
 from solver.solver import Problem, solve
